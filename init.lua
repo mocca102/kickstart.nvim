@@ -121,6 +121,13 @@ end)
 -- Enable break indent
 vim.o.breakindent = true
 
+-- Tab and indentation settings
+vim.o.tabstop = 2        -- Number of spaces a tab counts for
+vim.o.shiftwidth = 2     -- Number of spaces to use for each step of (auto)indent
+vim.o.softtabstop = 2    -- Number of spaces that a <Tab> counts for while editing
+vim.o.expandtab = true   -- Use spaces instead of tabs
+vim.o.smartindent = true -- Smart autoindenting when starting a new line
+
 -- Save undo history
 vim.o.undofile = true
 
@@ -198,6 +205,11 @@ vim.keymap.set('n', '<C-h>', '<C-w><C-h>', { desc = 'Move focus to the left wind
 vim.keymap.set('n', '<C-l>', '<C-w><C-l>', { desc = 'Move focus to the right window' })
 vim.keymap.set('n', '<C-j>', '<C-w><C-j>', { desc = 'Move focus to the lower window' })
 vim.keymap.set('n', '<C-k>', '<C-w><C-k>', { desc = 'Move focus to the upper window' })
+
+-- Split window management
+vim.keymap.set('n', '<leader>sv', ':vsplit<CR>', { desc = '[S]plit [V]ertically' })
+vim.keymap.set('n', '<leader>sh', ':split<CR>', { desc = '[S]plit [H]orizontally' })
+vim.keymap.set('n', '<leader>sx', ':close<CR>', { desc = '[S]plit: Close (e[X]it)' })
 
 -- NOTE: Some terminals have colliding keymaps or are not able to send distinct keycodes
 -- vim.keymap.set("n", "<C-S-h>", "<C-w>H", { desc = "Move window to the left" })
@@ -716,6 +728,8 @@ require('lazy').setup({
       local ensure_installed = vim.tbl_keys(servers or {})
       vim.list_extend(ensure_installed, {
         'stylua', -- Used to format Lua code
+        'eslint_d', -- Used to format JavaScript/TypeScript with ESLint rules
+        'typescript-language-server', -- TypeScript LSP (used by typescript-tools)
       })
       require('mason-tool-installer').setup { ensure_installed = ensure_installed }
 
@@ -724,6 +738,11 @@ require('lazy').setup({
         automatic_installation = false,
         handlers = {
           function(server_name)
+            -- Skip ts_ls and vtsls - we're using typescript-tools instead
+            if server_name == 'ts_ls' or server_name == 'vtsls' then
+              return
+            end
+
             local server = servers[server_name] or {}
             -- This handles overriding only values explicitly passed
             -- by the server configuration above. Useful when disabling
@@ -731,6 +750,51 @@ require('lazy').setup({
             server.capabilities = vim.tbl_deep_extend('force', {}, capabilities, server.capabilities or {})
             require('lspconfig')[server_name].setup(server)
           end,
+        },
+      }
+    end,
+  },
+
+  -- TypeScript Tools (better auto-import support)
+  {
+    'pmizio/typescript-tools.nvim',
+    dependencies = { 'nvim-lua/plenary.nvim', 'neovim/nvim-lspconfig' },
+    ft = { 'typescript', 'typescriptreact', 'javascript', 'javascriptreact' },
+    config = function()
+      local api = require 'typescript-tools.api'
+      require('typescript-tools').setup {
+        on_attach = function(client, bufnr)
+          local opts = { buffer = bufnr, noremap = true, silent = true }
+
+          -- Auto import - add missing imports
+          vim.keymap.set('n', '<leader>ci', function()
+            vim.cmd 'TSToolsAddMissingImports'
+          end, { buffer = bufnr, desc = '[C]ode: Add missing [I]mports' })
+
+          -- Organize imports
+          vim.keymap.set('n', '<leader>co', function()
+            vim.cmd 'TSToolsOrganizeImports'
+          end, { buffer = bufnr, desc = '[C]ode: [O]rganize imports' })
+
+          -- Remove unused imports
+          vim.keymap.set('n', '<leader>cu', function()
+            vim.cmd 'TSToolsRemoveUnusedImports'
+          end, { buffer = bufnr, desc = '[C]ode: Remove [U]nused imports' })
+
+          -- Fix all
+          vim.keymap.set('n', '<leader>cf', function()
+            vim.cmd 'TSToolsFixAll'
+          end, { buffer = bufnr, desc = '[C]ode: [F]ix all' })
+        end,
+        settings = {
+          tsserver_file_preferences = {
+            includeInlayParameterNameHints = 'all',
+            includeCompletionsForModuleExports = true,
+            quotePreference = 'auto',
+            includeCompletionsWithInsertText = true,
+            includeCompletionsWithSnippetText = true,
+            includeAutomaticOptionalChainCompletions = true,
+          },
         },
       }
     end,
@@ -768,6 +832,10 @@ require('lazy').setup({
       end,
       formatters_by_ft = {
         lua = { 'stylua' },
+        javascript = { 'eslint_d' },
+        javascriptreact = { 'eslint_d' },
+        typescript = { 'eslint_d' },
+        typescriptreact = { 'eslint_d' },
         -- Conform can also run multiple formatters sequentially
         -- python = { "isort", "black" },
         --
@@ -941,10 +1009,13 @@ require('lazy').setup({
   { -- Highlight, edit, and navigate code
     'nvim-treesitter/nvim-treesitter',
     build = ':TSUpdate',
+    dependencies = {
+      'nvim-treesitter/nvim-treesitter-textobjects',
+    },
     main = 'nvim-treesitter.configs', -- Sets main module to use for opts
     -- [[ Configure Treesitter ]] See `:help nvim-treesitter`
     opts = {
-      ensure_installed = { 'bash', 'c', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc' },
+      ensure_installed = { 'bash', 'c', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc', 'javascript', 'typescript' },
       -- Autoinstall languages that are not installed
       auto_install = true,
       highlight = {
@@ -955,13 +1026,62 @@ require('lazy').setup({
         additional_vim_regex_highlighting = { 'ruby' },
       },
       indent = { enable = true, disable = { 'ruby' } },
+      textobjects = {
+        select = {
+          enable = true,
+          lookahead = true, -- Automatically jump forward to textobj
+          keymaps = {
+            -- You can use the capture groups defined in textobjects.scm
+            ['af'] = '@function.outer',
+            ['if'] = '@function.inner',
+            ['ac'] = '@class.outer',
+            ['ic'] = '@class.inner',
+            ['aa'] = '@parameter.outer',
+            ['ia'] = '@parameter.inner',
+            ['ab'] = '@block.outer',
+            ['ib'] = '@block.inner',
+            ['al'] = '@loop.outer',
+            ['il'] = '@loop.inner',
+            ['ai'] = '@conditional.outer',
+            ['ii'] = '@conditional.inner',
+            ['a/'] = '@comment.outer',
+          },
+        },
+        move = {
+          enable = true,
+          set_jumps = true, -- Add jumps to the jumplist
+          goto_next_start = {
+            [']f'] = '@function.outer',
+            [']c'] = '@class.outer',
+            [']a'] = '@parameter.inner',
+          },
+          goto_next_end = {
+            [']F'] = '@function.outer',
+            [']C'] = '@class.outer',
+            [']A'] = '@parameter.inner',
+          },
+          goto_previous_start = {
+            ['[f'] = '@function.outer',
+            ['[c'] = '@class.outer',
+            ['[a'] = '@parameter.inner',
+          },
+          goto_previous_end = {
+            ['[F'] = '@function.outer',
+            ['[C'] = '@class.outer',
+            ['[A'] = '@parameter.inner',
+          },
+        },
+        swap = {
+          enable = true,
+          swap_next = {
+            ['<leader>sa'] = '@parameter.inner',
+          },
+          swap_previous = {
+            ['<leader>sA'] = '@parameter.inner',
+          },
+        },
+      },
     },
-    -- There are additional nvim-treesitter modules that you can use to interact
-    -- with nvim-treesitter. You should go explore a few and see what interests you:
-    --
-    --    - Incremental selection: Included, see `:help nvim-treesitter-incremental-selection-mod`
-    --    - Show your current context: https://github.com/nvim-treesitter/nvim-treesitter-context
-    --    - Treesitter + textobjects: https://github.com/nvim-treesitter/nvim-treesitter-textobjects
   },
 
   -- The following comments only work if you have downloaded the kickstart repo, not just copy pasted the
@@ -990,6 +1110,92 @@ require('lazy').setup({
   -- Or use telescope!
   -- In normal mode type `<space>sh` then write `lazy.nvim-plugin`
   -- you can continue same window with `<space>sr` which resumes last telescope search
+
+  -- NvimTree - File Explorer
+  {
+    'nvim-tree/nvim-tree.lua',
+    version = '*',
+    lazy = false,
+    dependencies = {
+      'nvim-tree/nvim-web-devicons',
+    },
+    config = function()
+      -- Disable netrw at the very start
+      vim.g.loaded_netrw = 1
+      vim.g.loaded_netrwPlugin = 1
+
+      require('nvim-tree').setup {}
+
+      -- Keybinding to toggle NvimTree
+      vim.keymap.set('n', '<leader>e', ':NvimTreeToggle<CR>', { desc = 'Toggle file [E]xplorer' })
+    end,
+  },
+
+  -- Harpoon 2 - Quick File Navigation
+  {
+    'ThePrimeagen/harpoon',
+    branch = 'harpoon2',
+    dependencies = { 'nvim-lua/plenary.nvim' },
+    config = function()
+      local harpoon = require 'harpoon'
+
+      -- Setup harpoon
+      harpoon:setup {
+        settings = {
+          save_on_toggle = true,
+          sync_on_ui_close = true,
+        },
+      }
+
+      -- Keymaps
+      vim.keymap.set('n', '<leader>a', function()
+        harpoon:list():add()
+        vim.notify('File added to Harpoon', vim.log.levels.INFO)
+      end, { desc = 'Harpoon: [A]dd file' })
+
+      vim.keymap.set('n', '<C-e>', function()
+        harpoon.ui:toggle_quick_menu(harpoon:list())
+      end, { desc = 'Harpoon: Toggle menu' })
+
+      -- Quick navigation to first 4 files
+      vim.keymap.set('n', '<leader>1', function()
+        harpoon:list():select(1)
+      end, { desc = 'Harpoon: File 1' })
+
+      vim.keymap.set('n', '<leader>2', function()
+        harpoon:list():select(2)
+      end, { desc = 'Harpoon: File 2' })
+
+      vim.keymap.set('n', '<leader>3', function()
+        harpoon:list():select(3)
+      end, { desc = 'Harpoon: File 3' })
+
+      vim.keymap.set('n', '<leader>4', function()
+        harpoon:list():select(4)
+      end, { desc = 'Harpoon: File 4' })
+
+      -- Navigate harpoon list
+      vim.keymap.set('n', '<C-S-P>', function()
+        harpoon:list():prev()
+      end, { desc = 'Harpoon: Previous file' })
+
+      vim.keymap.set('n', '<C-S-N>', function()
+        harpoon:list():next()
+      end, { desc = 'Harpoon: Next file' })
+    end,
+  },
+
+  -- LazyGit Integration
+  {
+    'kdheepak/lazygit.nvim',
+    dependencies = {
+      'nvim-lua/plenary.nvim',
+    },
+    config = function()
+      -- Keybinding to open lazygit
+      vim.keymap.set('n', '<leader>gg', '<cmd>LazyGit<cr>', { desc = 'Open Lazy[G]it' })
+    end,
+  },
 }, {
   ui = {
     -- If you are using a Nerd Font: set icons to an empty table which will use the
