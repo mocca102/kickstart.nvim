@@ -122,10 +122,10 @@ end)
 vim.o.breakindent = true
 
 -- Tab and indentation settings
-vim.o.tabstop = 2        -- Number of spaces a tab counts for
-vim.o.shiftwidth = 2     -- Number of spaces to use for each step of (auto)indent
-vim.o.softtabstop = 2    -- Number of spaces that a <Tab> counts for while editing
-vim.o.expandtab = true   -- Use spaces instead of tabs
+vim.o.tabstop = 2 -- Number of spaces a tab counts for
+vim.o.shiftwidth = 2 -- Number of spaces to use for each step of (auto)indent
+vim.o.softtabstop = 2 -- Number of spaces that a <Tab> counts for while editing
+vim.o.expandtab = true -- Use spaces instead of tabs
 vim.o.smartindent = true -- Smart autoindenting when starting a new line
 
 -- Save undo history
@@ -173,12 +173,22 @@ vim.o.scrolloff = 10
 -- See `:help 'confirm'`
 vim.o.confirm = true
 
+-- Folding settings
+vim.o.foldmethod = 'expr'
+vim.o.foldexpr = 'nvim_treesitter#foldexpr()'
+vim.o.foldenable = false -- Don't fold by default when opening files
+vim.o.foldlevel = 99 -- Start with all folds open
+vim.o.foldlevelstart = 99 -- Start with all folds open
+
 -- [[ Basic Keymaps ]]
 --  See `:help vim.keymap.set()`
 
 -- Clear highlights on search when pressing <Esc> in normal mode
 --  See `:help hlsearch`
 vim.keymap.set('n', '<Esc>', '<cmd>nohlsearch<CR>')
+
+-- Override escape key
+vim.keymap.set('i', 'jk', '<Esc>', { desc = 'Exit insert mode ' })
 
 -- Diagnostic keymaps
 vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagnostic [Q]uickfix list' })
@@ -210,6 +220,84 @@ vim.keymap.set('n', '<C-k>', '<C-w><C-k>', { desc = 'Move focus to the upper win
 vim.keymap.set('n', '<leader>sv', ':vsplit<CR>', { desc = '[S]plit [V]ertically' })
 vim.keymap.set('n', '<leader>sh', ':split<CR>', { desc = '[S]plit [H]orizontally' })
 vim.keymap.set('n', '<leader>sx', ':close<CR>', { desc = '[S]plit: Close (e[X]it)' })
+vim.keymap.set('n', '<leader>se', '<C-w>=', { desc = '[S]plit: [E]qualize sizes' })
+vim.keymap.set('n', '<leader>sm', ':only<CR>', { desc = '[S]plit: [M]aximize current' })
+
+-- Resize windows with arrow keys
+vim.keymap.set('n', '<C-Up>', ':resize +2<CR>', { desc = 'Increase window height' })
+vim.keymap.set('n', '<C-Down>', ':resize -2<CR>', { desc = 'Decrease window height' })
+vim.keymap.set('n', '<C-Left>', ':vertical resize -2<CR>', { desc = 'Decrease window width' })
+vim.keymap.set('n', '<C-Right>', ':vertical resize +2<CR>', { desc = 'Increase window width' })
+
+-- Buffer management
+vim.keymap.set('n', '<leader>bd', ':bdelete<CR>', { desc = '[B]uffer [D]elete' })
+vim.keymap.set('n', '<leader>bD', ':bdelete!<CR>', { desc = '[B]uffer [D]elete (force)' })
+vim.keymap.set('n', '<leader>bn', ':bnext<CR>', { desc = '[B]uffer [N]ext' })
+vim.keymap.set('n', '<leader>bp', ':bprevious<CR>', { desc = '[B]uffer [P]revious' })
+vim.keymap.set('n', '<leader>ba', ':%bdelete<CR>', { desc = '[B]uffer delete [A]ll' })
+vim.keymap.set('n', '<leader>bo', ':%bdelete|edit #|normal `"<CR>', { desc = '[B]uffer delete [O]thers' })
+vim.keymap.set('n', '<S-l>', ':bnext<CR>', { desc = 'Next buffer' })
+vim.keymap.set('n', '<S-h>', ':bprevious<CR>', { desc = 'Previous buffer' })
+
+-- Tab management
+vim.keymap.set('n', '<leader>tn', ':tabnew<CR>', { desc = '[T]ab [N]ew' })
+vim.keymap.set('n', '<leader>tc', ':tabclose<CR>', { desc = '[T]ab [C]lose' })
+vim.keymap.set('n', '<leader>to', ':tabonly<CR>', { desc = '[T]ab [O]nly (close others)' })
+vim.keymap.set('n', '<leader>tN', ':tabnext<CR>', { desc = '[T]ab [N]ext' })
+vim.keymap.set('n', '<leader>tp', ':tabprevious<CR>', { desc = '[T]ab [P]revious' })
+
+-- Text manipulation
+vim.keymap.set('v', '<', '<gv', { desc = 'Indent left and reselect' })
+vim.keymap.set('v', '>', '>gv', { desc = 'Indent right and reselect' })
+vim.keymap.set('v', 'J', ":m '>+1<CR>gv=gv", { desc = 'Move selection down' })
+vim.keymap.set('v', 'K', ":m '<-2<CR>gv=gv", { desc = 'Move selection up' })
+vim.keymap.set('n', 'J', 'mzJ`z', { desc = 'Join lines and keep cursor position' })
+vim.keymap.set('n', '<leader>y', '"+y', { desc = '[Y]ank to system clipboard' })
+vim.keymap.set('v', '<leader>y', '"+y', { desc = '[Y]ank to system clipboard' })
+vim.keymap.set('n', '<leader>Y', '"+Y', { desc = '[Y]ank line to system clipboard' })
+vim.keymap.set('n', '<leader>p', '"+p', { desc = '[P]aste from system clipboard' })
+vim.keymap.set('v', '<leader>p', '"+p', { desc = '[P]aste from system clipboard' })
+
+-- Better search navigation
+vim.keymap.set('n', 'n', 'nzzzv', { desc = 'Next search result (centered)' })
+vim.keymap.set('n', 'N', 'Nzzzv', { desc = 'Previous search result (centered)' })
+
+-- Folding keybindings
+vim.keymap.set('n', '<leader>zz', 'za', { desc = 'Toggle fold' })
+vim.keymap.set('n', '<leader>zo', 'zo', { desc = 'Open fold' })
+vim.keymap.set('n', '<leader>zc', 'zc', { desc = 'Close fold' })
+vim.keymap.set('n', '<leader>zR', 'zR', { desc = 'Open all folds' })
+vim.keymap.set('n', '<leader>zM', 'zM', { desc = 'Close all folds' })
+
+-- Quickfix and location list
+vim.keymap.set('n', '<leader>qo', ':copen<CR>', { desc = '[Q]uickfix [O]pen' })
+vim.keymap.set('n', '<leader>qc', ':cclose<CR>', { desc = '[Q]uickfix [C]lose' })
+vim.keymap.set('n', '<leader>qn', ':cnext<CR>', { desc = '[Q]uickfix [N]ext' })
+vim.keymap.set('n', '<leader>qp', ':cprevious<CR>', { desc = '[Q]uickfix [P]revious' })
+vim.keymap.set('n', '<leader>lo', ':lopen<CR>', { desc = '[L]ocation list [O]pen' })
+vim.keymap.set('n', '<leader>lc', ':lclose<CR>', { desc = '[L]ocation list [C]lose' })
+vim.keymap.set('n', '<leader>ln', ':lnext<CR>', { desc = '[L]ocation list [N]ext' })
+vim.keymap.set('n', '<leader>lp', ':lprevious<CR>', { desc = '[L]ocation list [P]revious' })
+
+-- Better page navigation (keep cursor centered)
+vim.keymap.set('n', '<C-d>', '<C-d>zz', { desc = 'Page down (centered)' })
+vim.keymap.set('n', '<C-u>', '<C-u>zz', { desc = 'Page up (centered)' })
+
+-- Quick save and quit
+vim.keymap.set('n', '<leader>w', ':w<CR>', { desc = '[W]rite (save) file' })
+vim.keymap.set('n', '<leader>W', ':wa<CR>', { desc = '[W]rite all files' })
+vim.keymap.set('n', '<leader>Q', ':qa<CR>', { desc = '[Q]uit all' })
+
+-- Search and replace
+vim.keymap.set('n', '<leader>rw', ':%s/\\<<C-r><C-w>\\>//g<Left><Left>', { desc = '[R]eplace [W]ord under cursor' })
+vim.keymap.set('v', '<leader>rw', ':s/\\<<C-r><C-w>\\>//g<Left><Left>', { desc = '[R]eplace [W]ord in selection' })
+
+-- Clear search, diff update and redraw
+vim.keymap.set('n', '<leader>ur', '<Cmd>nohlsearch<Bar>diffupdate<Bar>normal! <C-L><CR>', { desc = '[U]I [R]efresh' })
+
+-- Better command line editing
+vim.keymap.set('c', '<C-a>', '<Home>', { desc = 'Go to beginning of line' })
+vim.keymap.set('c', '<C-e>', '<End>', { desc = 'Go to end of line' })
 
 -- NOTE: Some terminals have colliding keymaps or are not able to send distinct keycodes
 -- vim.keymap.set("n", "<C-S-h>", "<C-w>H", { desc = "Move window to the left" })
@@ -389,6 +477,7 @@ require('lazy').setup({
         end,
       },
       { 'nvim-telescope/telescope-ui-select.nvim' },
+      { 'benfowler/telescope-luasnip.nvim' },
 
       -- Useful for getting pretty icons, but requires a Nerd Font.
       { 'nvim-tree/nvim-web-devicons', enabled = vim.g.have_nerd_font },
@@ -415,16 +504,64 @@ require('lazy').setup({
 
       -- [[ Configure Telescope ]]
       -- See `:help telescope` and `:help telescope.setup()`
+      local actions = require 'telescope.actions'
+
       require('telescope').setup {
-        -- You can put your default mappings / updates / etc. in here
-        --  All the info you're looking for is in `:help telescope.setup()`
-        --
-        -- defaults = {
-        --   mappings = {
-        --     i = { ['<c-enter>'] = 'to_fuzzy_refine' },
-        --   },
-        -- },
-        -- pickers = {}
+        defaults = {
+          sorting_strategy = 'ascending',
+          prompt_prefix = ' 🔍  ',
+          winblend = 10,
+          file_ignore_patterns = {
+            'node_modules',
+            '.git/',
+            'dist/',
+            'build/',
+            'target/',
+            '%.lock',
+          },
+          layout_config = {
+            width = 0.95,
+            height = 0.85,
+            prompt_position = 'top',
+            horizontal = {
+              preview_width = function(_, cols, _)
+                if cols > 200 then
+                  return math.floor(cols * 0.4)
+                else
+                  return math.floor(cols * 0.6)
+                end
+              end,
+            },
+          },
+          vimgrep_arguments = {
+            'rg',
+            '--color=never',
+            '--no-heading',
+            '--with-filename',
+            '--line-number',
+            '--column',
+            '--smart-case',
+            '--trim',
+          },
+          mappings = {
+            i = {
+              ['<tab>'] = actions.toggle_selection + actions.move_selection_next,
+              ['<s-tab>'] = actions.toggle_selection + actions.move_selection_previous,
+              ['<C-q>'] = actions.smart_send_to_qflist + actions.open_qflist,
+            },
+            n = {
+              ['<tab>'] = actions.toggle_selection + actions.move_selection_next,
+              ['<s-tab>'] = actions.toggle_selection + actions.move_selection_previous,
+              ['<C-q>'] = actions.smart_send_to_qflist + actions.open_qflist,
+            },
+          },
+        },
+        pickers = {
+          find_files = {
+            hidden = true,
+            file_ignore_patterns = { '^.git/' },
+          },
+        },
         extensions = {
           ['ui-select'] = {
             require('telescope.themes').get_dropdown(),
@@ -435,6 +572,7 @@ require('lazy').setup({
       -- Enable Telescope extensions if they are installed
       pcall(require('telescope').load_extension, 'fzf')
       pcall(require('telescope').load_extension, 'ui-select')
+      pcall(require('telescope').load_extension, 'luasnip')
 
       -- See `:help telescope.builtin`
       local builtin = require 'telescope.builtin'
@@ -709,6 +847,32 @@ require('lazy').setup({
               -- diagnostics = { disable = { 'missing-fields' } },
             },
           },
+        },
+
+        omnisharp = {
+          -- cmd = { 'omnisharp' },
+          -- Enables support for reading code style, naming convention and analyzer
+          -- settings from .editorconfig.
+          enable_editorconfig_support = true,
+          -- If true, MSBuild project system will only load projects for files that
+          -- were opened in the editor. This setting is useful for big C# codebases
+          -- and allows for faster initialization of code navigation features only
+          -- for projects that are relevant to code that is being edited. With this
+          -- setting enabled OmniSharp may load fewer projects and may thus display
+          -- incomplete reference lists for symbols.
+          enable_ms_build_load_projects_on_demand = false,
+          -- Enables support for roslyn analyzers, code fixes and rulesets.
+          enable_roslyn_analyzers = true,
+          -- Specifies whether 'using' directives should be grouped and sorted during
+          -- document formatting.
+          organize_imports_on_format = true,
+          -- Enables support for showing unimported types and unimported extension
+          -- methods in completion lists. When committed, the appropriate using
+          -- directive will be added at the top of the current file. This option can
+          -- have a negative impact on initial completion responsiveness,
+          -- particularly for the first few completion sessions after opening a
+          -- solution.
+          enable_import_completion = true,
         },
       }
 
@@ -1026,6 +1190,7 @@ require('lazy').setup({
         additional_vim_regex_highlighting = { 'ruby' },
       },
       indent = { enable = true, disable = { 'ruby' } },
+      fold = { enable = true },
       textobjects = {
         select = {
           enable = true,
@@ -1194,6 +1359,23 @@ require('lazy').setup({
     config = function()
       -- Keybinding to open lazygit
       vim.keymap.set('n', '<leader>gg', '<cmd>LazyGit<cr>', { desc = 'Open Lazy[G]it' })
+    end,
+  },
+
+  -- Markdown Preview
+  {
+    'iamcco/markdown-preview.nvim',
+    cmd = { 'MarkdownPreviewToggle', 'MarkdownPreview', 'MarkdownPreviewStop' },
+    build = 'cd app && yarn install',
+    init = function()
+      vim.g.mkdp_filetypes = { 'markdown' }
+    end,
+    ft = { 'markdown' },
+    config = function()
+      -- Keybindings for markdown preview
+      vim.keymap.set('n', '<leader>mp', '<cmd>MarkdownPreview<CR>', { desc = '[M]arkdown [P]review' })
+      vim.keymap.set('n', '<leader>ms', '<cmd>MarkdownPreviewStop<CR>', { desc = '[M]arkdown preview [S]top' })
+      vim.keymap.set('n', '<leader>mt', '<cmd>MarkdownPreviewToggle<CR>', { desc = '[M]arkdown preview [T]oggle' })
     end,
   },
 }, {
