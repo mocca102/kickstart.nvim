@@ -27,8 +27,6 @@ rtp:prepend(lazypath)
 require('lazy').setup({
   -- Import plugins from lua/plugins/ directory
   { import = 'plugins' },
-  -- Import custom plugins from lua/custom/plugins/ directory
-  { import = 'custom.plugins' },
 }, {
   ui = {
     -- If you are using a Nerd Font: set icons to an empty table which will use the

@@ -10,6 +10,16 @@ return {
   config = function()
     require('catppuccin').setup {
       flavour = 'mocha', -- latte, frappe, macchiato, mocha
+      dim_inactive = {
+        enabled = true,
+      },
+      color_overrides = {
+        mocha = {
+          base = '#11111b',
+          mantle = '#0a0a14',
+          crust = '#050510',
+        },
+      },
       styles = {
         comments = { 'italic' },
         conditionals = { 'italic' },
